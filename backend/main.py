@@ -1,0 +1,136 @@
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+import shutil
+import os
+from pypdf import PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+from dotenv import load_dotenv
+load_dotenv()
+from langchain.chains import RetrievalQA
+from langchain.llms import OpenAI
+from pydantic import BaseModel
+from openai import OpenAI
+
+app = FastAPI()
+
+# Allow frontend (React) to talk to backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, set this to your frontend's URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+UPLOAD_DIR = "uploaded_pdfs"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Chroma DB directory
+CHROMA_DIR = "chroma_db"
+os.makedirs(CHROMA_DIR, exist_ok=True)
+
+class ProcessPDFRequest(BaseModel):
+    filename: str
+
+@app.get("/")
+def read_root():
+    return {"message": "RAG backend is running!"}
+
+@app.post("/upload-pdf/")
+async def upload_pdf(file: UploadFile = File(...)):
+    """
+    Endpoint to upload a PDF file.
+    - Receives a PDF from the frontend.
+    - Saves it to a temporary directory for processing.
+    """
+    file_location = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"message": f"PDF '{file.filename}' uploaded successfully!", "filename": file.filename}
+
+@app.post("/process-pdf/")
+async def process_pdf(request: ProcessPDFRequest):
+    filename = request.filename
+    pdf_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(pdf_path):
+        return {"error": f"File {filename} not found."}
+
+    # 1. Extract text from PDF
+    reader = PdfReader(pdf_path)
+    full_text = ""
+    for page in reader.pages:
+        full_text += page.extract_text() or ""
+
+    # 2. Split text into chunks
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = splitter.split_text(full_text)
+
+    # 3. Embed each chunk (using OpenAI embeddings by default)
+    embeddings = OpenAIEmbeddings()
+
+    # 4. Store in Chroma
+    vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
+    vectordb.persist()
+
+    return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
+
+class AskRequest(BaseModel):
+    question: str
+
+@app.post("/ask/")
+async def ask_question(request: AskRequest):
+    question = request.question
+    # 1. Load Chroma vector store
+    embeddings = OpenAIEmbeddings()
+    vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+
+    # 2. Set up retriever
+    retriever = vectordb.as_retriever()
+
+    # 3. Set up LLM (OpenAI)
+    from langchain.llms import OpenAI as LangChainOpenAI
+    llm = LangChainOpenAI(temperature=0)
+
+    # 4. Set up RetrievalQA chain
+    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+
+    # 5. Get answer
+    answer = qa_chain.run(question)
+
+    return {"question": question, "answer": answer}
+
+class ExtractPointsRequest(BaseModel):
+    filename: str
+
+@app.post("/extract-points/")
+async def extract_points(request: ExtractPointsRequest):
+    filename = request.filename
+    pdf_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(pdf_path):
+        return {"error": f"File {filename} not found."}
+
+    # Extract text from PDF
+    reader = PdfReader(pdf_path)
+    full_text = ""
+    for page in reader.pages:
+        full_text += page.extract_text() or ""
+
+    # Summarize as bullet points using OpenAI
+    prompt = (
+        "Read the following document and extract the most important points as concise bullet points. "
+        "Be specific and cover the main ideas, facts, or steps. "
+        "Return only the bullet points, one per line, no introduction or conclusion.\n\n"
+        f"{full_text[:6000]}"
+    )
+    client = OpenAI()
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=512,
+        temperature=0.3,
+    )
+    content = response.choices[0].message.content.strip()
+    points = [line.lstrip("-•* ").strip() for line in content.splitlines() if line.strip()]
+    return {"points": points} 

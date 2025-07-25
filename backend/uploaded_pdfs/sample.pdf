@@ -1,0 +1,62 @@
+%PDF-1.4
+% Dummy PDF for DocuChat testing
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 420 >>
+stream
+BT
+/F1 20 Tf
+70 750 Td
+(The Solar System) Tj
+/F1 12 Tf
+0 -30 Td
+(Our solar system consists of the Sun and the objects that orbit it, including planets, moons, asteroids, and comets.) Tj
+0 -20 Td
+(Key Points:) Tj
+0 -20 Td
+(\255 The Sun is the center of the solar system.) Tj
+0 -15 Td
+(\255 There are eight major planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.) Tj
+0 -15 Td
+(\255 Earth is the third planet from the Sun and the only known planet to support life.) Tj
+0 -15 Td
+(\255 Jupiter is the largest planet in the solar system.) Tj
+0 -15 Td
+(\255 The asteroid belt lies between Mars and Jupiter.) Tj
+0 -30 Td
+(Facts:) Tj
+0 -20 Td
+(\255 The Sun contains more than 99% of the mass of the solar system.) Tj
+0 -15 Td
+(\255 Saturn is famous for its prominent ring system.) Tj
+0 -15 Td
+(\255 Neptune was the first planet located through mathematical predictions.) Tj
+0 -30 Td
+(You can ask questions like: 'Which planet is the largest?', 'What is the asteroid belt?', or 'How many planets are there?') Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000061 00000 n 
+0000000116 00000 n 
+0000000272 00000 n 
+0000000732 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+803
+%%EOF 
