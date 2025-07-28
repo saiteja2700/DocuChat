@@ -4,8 +4,8 @@ import shutil
 import os
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,7 +18,7 @@ if 'OPENAI_API_KEY' in os.environ:
 else:
     print("OPENAI_API_KEY not found in environment variables")
 from langchain.chains import RetrievalQA
-from langchain_community.llms import OpenAI
+from langchain_openai import OpenAI
 from pydantic import BaseModel
 from openai import OpenAI
 
@@ -116,14 +116,14 @@ async def ask_question(request: AskRequest):
         retriever = vectordb.as_retriever()
 
         # 3. Set up LLM (OpenAI)
-        from langchain_community.llms import OpenAI as LangChainOpenAI
+        from langchain_openai import OpenAI as LangChainOpenAI
         llm = LangChainOpenAI(temperature=0)
 
         # 4. Set up RetrievalQA chain
         qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
         # 5. Get answer
-        answer = qa_chain.run(question)
+        answer = qa_chain.invoke({"query": question})["result"]
 
         return {"question": question, "answer": answer}
     except Exception as e:
