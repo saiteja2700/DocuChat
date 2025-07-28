@@ -18,10 +18,17 @@ app = FastAPI()
 # Allow frontend (React) to talk to backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, set this to your frontend's URL
+    allow_origins=[
+        "http://localhost:3000",
+        "https://saiteja2700.github.io",
+        "https://saiteja2700.github.io/DocuChat",
+        "https://saiteja2700.github.io/DocuChat/",
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 UPLOAD_DIR = "uploaded_pdfs"
@@ -37,6 +44,11 @@ class ProcessPDFRequest(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "RAG backend is running!"}
+
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight requests"""
+    return {"message": "CORS preflight handled"}
 
 @app.post("/upload-pdf/")
 async def upload_pdf(file: UploadFile = File(...)):
