@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/DocuChat/static/css/main.1f4aaf97.css",
-    "main.js": "/DocuChat/static/js/main.62da130a.js",
+    "main.js": "/DocuChat/static/js/main.bcca7d3c.js",
     "static/js/488.cccd0e31.chunk.js": "/DocuChat/static/js/488.cccd0e31.chunk.js",
     "service-worker.js": "/DocuChat/service-worker.js",
     "index.html": "/DocuChat/index.html",
     "main.1f4aaf97.css.map": "/DocuChat/static/css/main.1f4aaf97.css.map",
-    "main.62da130a.js.map": "/DocuChat/static/js/main.62da130a.js.map",
+    "main.bcca7d3c.js.map": "/DocuChat/static/js/main.bcca7d3c.js.map",
     "488.cccd0e31.chunk.js.map": "/DocuChat/static/js/488.cccd0e31.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1f4aaf97.css",
-    "static/js/main.62da130a.js"
+    "static/js/main.bcca7d3c.js"
   ]
 }
