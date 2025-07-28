@@ -487,6 +487,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<RAGUI />} />
+        <Route path="/DocuChat" element={<RAGUI />} />
+        <Route path="/DocuChat/" element={<RAGUI />} />
         <Route path="/rag" element={<RAGUI />} />
       </Routes>
     </Router>
