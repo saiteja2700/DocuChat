@@ -57,8 +57,8 @@ function RAGUI() {
     }
   }, [showWelcome]);
 
-  // Backend base URL
-  const BASE_URL = 'http://127.0.0.1:8000';
+  // Backend base URL - Update this when deploying
+  const BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
   // Handle PDF file selection
   const handleFileChange = (e) => {
