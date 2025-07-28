@@ -64,85 +64,97 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/process-pdf/")
 async def process_pdf(request: ProcessPDFRequest):
-    filename = request.filename
-    pdf_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(pdf_path):
-        return {"error": f"File {filename} not found."}
+    try:
+        filename = request.filename
+        pdf_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.exists(pdf_path):
+            return {"error": f"File {filename} not found."}
 
-    # 1. Extract text from PDF
-    reader = PdfReader(pdf_path)
-    full_text = ""
-    for page in reader.pages:
-        full_text += page.extract_text() or ""
+        # 1. Extract text from PDF
+        reader = PdfReader(pdf_path)
+        full_text = ""
+        for page in reader.pages:
+            full_text += page.extract_text() or ""
 
-    # 2. Split text into chunks
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_text(full_text)
+        # 2. Split text into chunks
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = splitter.split_text(full_text)
 
-    # 3. Embed each chunk (using OpenAI embeddings by default)
-    embeddings = OpenAIEmbeddings()
+        # 3. Embed each chunk (using OpenAI embeddings by default)
+        embeddings = OpenAIEmbeddings()
 
-    # 4. Store in Chroma
-    vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
-    vectordb.persist()
+        # 4. Store in Chroma
+        vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
+        vectordb.persist()
 
-    return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
+        return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
+    except Exception as e:
+        print(f"Error in process_pdf: {str(e)}")
+        return {"error": f"Processing failed: {str(e)}"}
 
 class AskRequest(BaseModel):
     question: str
 
 @app.post("/ask/")
 async def ask_question(request: AskRequest):
-    question = request.question
-    # 1. Load Chroma vector store
-    embeddings = OpenAIEmbeddings()
-    vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+    try:
+        question = request.question
+        # 1. Load Chroma vector store
+        embeddings = OpenAIEmbeddings()
+        vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
 
-    # 2. Set up retriever
-    retriever = vectordb.as_retriever()
+        # 2. Set up retriever
+        retriever = vectordb.as_retriever()
 
-    # 3. Set up LLM (OpenAI)
-    from langchain_community.llms import OpenAI as LangChainOpenAI
-    llm = LangChainOpenAI(temperature=0)
+        # 3. Set up LLM (OpenAI)
+        from langchain_community.llms import OpenAI as LangChainOpenAI
+        llm = LangChainOpenAI(temperature=0)
 
-    # 4. Set up RetrievalQA chain
-    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+        # 4. Set up RetrievalQA chain
+        qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
-    # 5. Get answer
-    answer = qa_chain.run(question)
+        # 5. Get answer
+        answer = qa_chain.run(question)
 
-    return {"question": question, "answer": answer}
+        return {"question": question, "answer": answer}
+    except Exception as e:
+        print(f"Error in ask_question: {str(e)}")
+        return {"error": f"Failed to get answer: {str(e)}"}
 
 class ExtractPointsRequest(BaseModel):
     filename: str
 
 @app.post("/extract-points/")
 async def extract_points(request: ExtractPointsRequest):
-    filename = request.filename
-    pdf_path = os.path.join(UPLOAD_DIR, filename)
-    if not os.path.exists(pdf_path):
-        return {"error": f"File {filename} not found."}
+    try:
+        filename = request.filename
+        pdf_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.exists(pdf_path):
+            return {"error": f"File {filename} not found."}
 
-    # Extract text from PDF
-    reader = PdfReader(pdf_path)
-    full_text = ""
-    for page in reader.pages:
-        full_text += page.extract_text() or ""
+        # Extract text from PDF
+        reader = PdfReader(pdf_path)
+        full_text = ""
+        for page in reader.pages:
+            full_text += page.extract_text() or ""
 
-    # Summarize as bullet points using OpenAI
-    prompt = (
-        "Read the following document and extract the most important points as concise bullet points. "
-        "Be specific and cover the main ideas, facts, or steps. "
-        "Return only the bullet points, one per line, no introduction or conclusion.\n\n"
-        f"{full_text[:6000]}"
-    )
-    client = OpenAI()
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=512,
-        temperature=0.3,
-    )
-    content = response.choices[0].message.content.strip()
-    points = [line.lstrip("-•* ").strip() for line in content.splitlines() if line.strip()]
-    return {"points": points} 
+        # Summarize as bullet points using OpenAI
+        prompt = (
+            "Read the following document and extract the most important points as concise bullet points. "
+            "Be specific and cover the main ideas, facts, or steps. "
+            "Return only the bullet points, one per line, no introduction or conclusion.\n\n"
+            f"{full_text[:6000]}"
+        )
+        client = OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=512,
+            temperature=0.3,
+        )
+        content = response.choices[0].message.content.strip()
+        points = [line.lstrip("-•* ").strip() for line in content.splitlines() if line.strip()]
+        return {"points": points}
+    except Exception as e:
+        print(f"Error in extract_points: {str(e)}")
+        return {"error": f"Failed to extract points: {str(e)}"} 
