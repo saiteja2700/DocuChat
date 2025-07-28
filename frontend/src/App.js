@@ -719,8 +719,8 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<RAGUI />} />
         <Route path="/rag" element={<RAGUI />} />
-        <Route path="/" element={<Navigate to="/rag" replace />} />
       </Routes>
     </Router>
   );
