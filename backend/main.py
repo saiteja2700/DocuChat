@@ -8,6 +8,15 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 load_dotenv()
+
+# Debug: Check if environment variables are loaded
+import os
+print(f"OPENAI_API_KEY set: {'OPENAI_API_KEY' in os.environ}")
+if 'OPENAI_API_KEY' in os.environ:
+    print(f"OPENAI_API_KEY length: {len(os.environ['OPENAI_API_KEY'])}")
+    print(f"OPENAI_API_KEY starts with: {os.environ['OPENAI_API_KEY'][:10]}...")
+else:
+    print("OPENAI_API_KEY not found in environment variables")
 from langchain.chains import RetrievalQA
 from langchain_community.llms import OpenAI
 from pydantic import BaseModel
