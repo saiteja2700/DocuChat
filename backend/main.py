@@ -114,7 +114,10 @@ async def process_pdf(request: ProcessPDFRequest):
         # 3. Embed each chunk (using simple embeddings)
         embeddings = SimpleEmbeddings()
 
-        # 4. Store in Chroma
+        # 4. Store in Chroma (clear existing data first)
+        import shutil
+        if os.path.exists(CHROMA_DIR):
+            shutil.rmtree(CHROMA_DIR)
         vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
 
         return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
