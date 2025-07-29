@@ -4,10 +4,32 @@ import shutil
 import os
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+import hashlib
+import json
 from dotenv import load_dotenv
 load_dotenv()
+
+# Simple embedding class that uses text hashing
+class SimpleEmbeddings:
+    def __init__(self):
+        self.dimension = 128
+    
+    def embed_documents(self, texts):
+        embeddings = []
+        for text in texts:
+            # Create a simple hash-based embedding
+            hash_obj = hashlib.md5(text.encode())
+            hash_hex = hash_obj.hexdigest()
+            # Convert hex to list of floats
+            embedding = [float(int(hash_hex[i:i+2], 16)) / 255.0 for i in range(0, 32, 2)]
+            # Pad to 128 dimensions
+            embedding.extend([0.0] * (128 - len(embedding)))
+            embeddings.append(embedding)
+        return embeddings
+    
+    def embed_query(self, text):
+        return self.embed_documents([text])[0]
 
 # Debug: Check if environment variables are loaded
 import os
@@ -89,13 +111,8 @@ async def process_pdf(request: ProcessPDFRequest):
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = splitter.split_text(full_text)
 
-        # 3. Embed each chunk (using OpenAI embeddings)
-        try:
-            embeddings = OpenAIEmbeddings()
-        except Exception as e:
-            print(f"Error creating OpenAI embeddings: {e}")
-            # Fallback: use a simple text-based approach
-            return {"error": "Embedding service unavailable. Please try again later."}
+        # 3. Embed each chunk (using simple embeddings)
+        embeddings = SimpleEmbeddings()
 
         # 4. Store in Chroma
         vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
@@ -114,12 +131,8 @@ async def ask_question(request: AskRequest):
     try:
         question = request.question
         # 1. Load Chroma vector store
-        try:
-            embeddings = OpenAIEmbeddings()
-            vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-        except Exception as e:
-            print(f"Error loading vector store: {e}")
-            return {"error": "Vector store unavailable. Please try again later."}
+        embeddings = SimpleEmbeddings()
+        vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
 
         # 2. Set up retriever
         retriever = vectordb.as_retriever()

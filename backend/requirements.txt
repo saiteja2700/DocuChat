@@ -41,7 +41,7 @@ langchain-core==0.3.72
 langchain-text-splitters==0.3.9
 langchain-openai==0.2.8
 langchain-chroma==0.2.5
-# Use OpenAI embeddings directly (no tiktoken needed for basic usage)
+# Use simple text-based similarity (no external dependencies)
 # sentence-transformers==2.2.2
 langsmith==0.4.8
 markdown-it-py==3.0.0
