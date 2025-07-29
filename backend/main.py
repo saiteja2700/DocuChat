@@ -119,11 +119,13 @@ async def process_pdf(request: ProcessPDFRequest):
         import shutil
         if os.path.exists(CHROMA_DIR):
             shutil.rmtree(CHROMA_DIR)
+        
         # Use a unique collection name to avoid conflicts
         collection_name = f"pdf_{int(time.time())}"
         vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR, collection_name=collection_name)
         
         # Store the collection name for the ask endpoint
+        os.makedirs(CHROMA_DIR, exist_ok=True)
         with open(os.path.join(CHROMA_DIR, "current_collection.txt"), "w") as f:
             f.write(collection_name)
 
@@ -150,6 +152,9 @@ async def ask_question(request: AskRequest):
         with open(collection_file, "r") as f:
             collection_name = f.read().strip()
         
+        print(f"Using collection: {collection_name}")
+        print(f"Chroma directory exists: {os.path.exists(CHROMA_DIR)}")
+        
         try:
             vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings, collection_name=collection_name)
         except Exception as e:
@@ -170,9 +175,18 @@ async def ask_question(request: AskRequest):
         qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
         # 5. Get answer
-        answer = qa_chain.invoke({"query": question})["result"]
-
-        return {"question": question, "answer": answer}
+        try:
+            result = qa_chain.invoke({"query": question})
+            answer = result["result"]
+            
+            # Check if answer is empty or None
+            if not answer or answer.strip() == "":
+                return {"error": "No relevant information found in the PDF to answer this question."}
+                
+            return {"question": question, "answer": answer}
+        except Exception as e:
+            print(f"Error getting answer: {str(e)}")
+            return {"error": f"Failed to generate answer: {str(e)}"}
     except Exception as e:
         print(f"Error in ask_question: {str(e)}")
         return {"error": f"Failed to get answer: {str(e)}"}
