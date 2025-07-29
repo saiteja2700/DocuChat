@@ -134,7 +134,14 @@ async def ask_question(request: AskRequest):
         question = request.question
         # 1. Load Chroma vector store
         embeddings = SimpleEmbeddings()
-        vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+        try:
+            vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+        except Exception as e:
+            # If there's a dimension mismatch, clear the database and recreate
+            import shutil
+            if os.path.exists(CHROMA_DIR):
+                shutil.rmtree(CHROMA_DIR)
+            return {"error": "Database was corrupted. Please upload your PDF again."}
 
         # 2. Set up retriever
         retriever = vectordb.as_retriever()
