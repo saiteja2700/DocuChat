@@ -7,6 +7,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 import hashlib
 import json
+import time
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -118,7 +119,13 @@ async def process_pdf(request: ProcessPDFRequest):
         import shutil
         if os.path.exists(CHROMA_DIR):
             shutil.rmtree(CHROMA_DIR)
-        vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
+        # Use a unique collection name to avoid conflicts
+        collection_name = f"pdf_{int(time.time())}"
+        vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR, collection_name=collection_name)
+        
+        # Store the collection name for the ask endpoint
+        with open(os.path.join(CHROMA_DIR, "current_collection.txt"), "w") as f:
+            f.write(collection_name)
 
         return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
     except Exception as e:
@@ -134,8 +141,17 @@ async def ask_question(request: AskRequest):
         question = request.question
         # 1. Load Chroma vector store
         embeddings = SimpleEmbeddings()
+        
+        # Get the current collection name
+        collection_file = os.path.join(CHROMA_DIR, "current_collection.txt")
+        if not os.path.exists(collection_file):
+            return {"error": "No PDF has been processed yet. Please upload a PDF first."}
+        
+        with open(collection_file, "r") as f:
+            collection_name = f.read().strip()
+        
         try:
-            vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+            vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings, collection_name=collection_name)
         except Exception as e:
             # If there's a dimension mismatch, clear the database and recreate
             import shutil
