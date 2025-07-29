@@ -4,7 +4,7 @@ import shutil
 import os
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from dotenv import load_dotenv
 load_dotenv()
@@ -89,8 +89,8 @@ async def process_pdf(request: ProcessPDFRequest):
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = splitter.split_text(full_text)
 
-        # 3. Embed each chunk (using OpenAI embeddings by default)
-        embeddings = OpenAIEmbeddings()
+        # 3. Embed each chunk (using HuggingFace embeddings)
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
         # 4. Store in Chroma
         vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
@@ -109,7 +109,7 @@ async def ask_question(request: AskRequest):
     try:
         question = request.question
         # 1. Load Chroma vector store
-        embeddings = OpenAIEmbeddings()
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
 
         # 2. Set up retriever
