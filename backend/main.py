@@ -116,7 +116,6 @@ async def process_pdf(request: ProcessPDFRequest):
 
         # 4. Store in Chroma
         vectordb = Chroma.from_texts(chunks, embeddings, persist_directory=CHROMA_DIR)
-        vectordb.persist()
 
         return {"message": f"PDF '{filename}' processed and stored in Chroma!", "num_chunks": len(chunks)}
     except Exception as e:
